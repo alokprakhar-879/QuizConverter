@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Noto Sans Devanagari", "Nirmala UI", "Mangal", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --color-bg: #f5f5f3;
+  --color-fg: #171717;
+  --color-muted: #6f6f69;
+  --color-line: #e4e4de;
+  --color-card: #ffffff;
+  --color-accent: #1f5eff;
+  --color-good: #0f7b45;
+  --color-bad: #d63c2e;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #f5f5f3;
+  color: #171717;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #dbe4ff;
+  color: #171717;
+}
+
+.stat-num {
+  font-variant-numeric: tabular-nums;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid #1f5eff;
+  outline-offset: 2px;
+}
+
+@keyframes timer-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.timer-urgent {
+  animation: timer-pulse 1s ease-in-out infinite;
+  color: #d63c2e;
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "prompt": "Which planet is known as the Red Planet?",
+    "optionA": "Venus",
+    "optionB": "Mars",
+    "optionC": "Jupiter",
+    "optionD": "Mercury",
+    "correctAnswer": "B",
+    "explanation": "Iron oxide on the surface gives Mars its colour."
+  },
+  {
+    "prompt": "What does HTML stand for?",
+    "optionA": "HyperText Markup Language",
+    "optionB": "High Transfer Machine Language",
+    "optionC": "Home Tool Markup Language",
+    "optionD": "Hyperlink Text Management Layer",
+    "correctAnswer": "A"
+  }
+]
