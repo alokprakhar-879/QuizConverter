@@ -120,9 +120,16 @@ if (databaseUrl) {
     if (isBuildPhase) {
       globalForDb.__quizPglite = new PGlite();
     } else {
-      const dbDir = path.resolve(process.cwd(), ".data/quiz-db");
-      fs.mkdirSync(dbDir, { recursive: true });
-      globalForDb.__quizPglite = new PGlite(dbDir);
+      try {
+        const isVercel = Boolean(process.env.VERCEL);
+        const dbDir = isVercel
+          ? path.resolve("/tmp", "quiz-db")
+          : path.resolve(process.cwd(), ".data/quiz-db");
+        fs.mkdirSync(dbDir, { recursive: true });
+        globalForDb.__quizPglite = new PGlite(dbDir);
+      } catch {
+        globalForDb.__quizPglite = new PGlite();
+      }
     }
   }
   pgliteClient = globalForDb.__quizPglite;
