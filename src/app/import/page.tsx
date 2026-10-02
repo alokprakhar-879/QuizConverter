@@ -94,27 +94,80 @@ function ImportInner() {
     setError("");
     setWarning("");
     setBusy("Reading PDF (supports up to 100 MB)…");
+
+    type ExtractResult = {
+      filename: string;
+      totalPages: number;
+      text: string;
+      charCount: number;
+      method: string;
+      questions: DraftQuestion[];
+      isQuestionBank?: boolean;
+      totalBankQuestions?: number;
+    };
+
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("count", String(effectiveCount));
-      form.append("language", config.language ?? "auto");
-      const data = await fetchJson<{
-        filename: string;
-        totalPages: number;
-        text: string;
-        charCount: number;
-        method: string;
-        questions: DraftQuestion[];
-        isQuestionBank?: boolean;
-        totalBankQuestions?: number;
-      }>("/api/pdf/extract", { method: "POST", body: form });
+      let data: ExtractResult;
+
+      // Vercel serverless functions have a 4.5 MB request body limit.
+      // For any PDF > 3.5 MB, extract text directly in the browser and send the clean text JSON (~50-100 KB)
+      if (file.size > 3.5 * 1024 * 1024) {
+        setBusy(`Extracting text from ${Math.round(file.size / (1024 * 1024))} MB PDF directly in your browser…`);
+        const { extractPdfText } = await import("@/lib/pdf-extract");
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const extracted = await extractPdfText(bytes);
+        if (!extracted.text.trim()) {
+          throw new Error("No selectable text was found. This PDF may be a scanned image.");
+        }
+        setBusy("Analyzing questions & creating quiz…");
+        data = await fetchJson<ExtractResult>("/api/pdf/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: extracted.text,
+            filename: file.name,
+            totalPages: extracted.totalPages,
+            count: effectiveCount,
+            language: config.language ?? "auto",
+          }),
+        });
+      } else {
+        try {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("count", String(effectiveCount));
+          form.append("language", config.language ?? "auto");
+          data = await fetchJson<ExtractResult>("/api/pdf/extract", { method: "POST", body: form });
+        } catch (uploadErr) {
+          // If 413 or payload limit error, fallback to browser extraction
+          setBusy("Direct upload limit reached; extracting text in browser…");
+          const { extractPdfText } = await import("@/lib/pdf-extract");
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const extracted = await extractPdfText(bytes);
+          data = await fetchJson<ExtractResult>("/api/pdf/extract", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: extracted.text,
+              filename: file.name,
+              totalPages: extracted.totalPages,
+              count: effectiveCount,
+              language: config.language ?? "auto",
+            }),
+          });
+        }
+      }
+
       setFileName(data.filename);
       setPages(data.totalPages);
       setCharCount(data.charCount);
       setText(data.text);
       setMethod(data.method);
-      const isBank = Boolean(data.isQuestionBank || data.method === "regex" || (data.questions && data.questions.length >= 2 && data.method === "regex"));
+      const isBank = Boolean(
+        data.isQuestionBank ||
+          data.method === "regex" ||
+          (data.questions && data.questions.length >= 2 && data.method === "regex"),
+      );
       setIsQuestionBank(isBank);
       setAllBankQuestions(data.questions || []);
       setDrafts(data.questions.length ? data.questions : [emptyDraft()]);

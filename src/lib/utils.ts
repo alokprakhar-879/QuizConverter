@@ -77,11 +77,22 @@ export function accuracyLabel(pct: number) {
 }
 
 export async function readJson<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { error?: string };
-  if (!response.ok) {
-    throw new Error(data.error || "Request failed");
+  const rawText = await response.text();
+  let data: any = null;
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    if (response.status === 413) {
+      throw new Error(
+        "File is too large for direct upload (server limit 4.5 MB). Processing via browser extractor...",
+      );
+    }
+    throw new Error(rawText || `Request failed with status ${response.status}`);
   }
-  return data;
+  if (!response.ok) {
+    throw new Error(data?.error || `Request failed (${response.status})`);
+  }
+  return data as T;
 }
 
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
